@@ -18,9 +18,19 @@ services:
       - key: SESSION_SECRET
         generateValue: true
 
-  - type: web
+  - type: static
     name: shore-store-frontend
-    env: docker
-    dockerfilePath: frontend/Dockerfile
-    dockerContext: frontend
+    env: static
+    buildCommand: cd frontend && npm install --legacy-peer-deps && npm run build
+    publishPath: frontend/dist
     plan: free
+    routes:
+      - type: rewrite
+        src: /*
+        dest: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: shore-store-backend
+          property: host
