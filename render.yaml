@@ -22,12 +22,12 @@ services:
     name: shore-store-frontend
     env: static
     buildCommand: cd frontend && npm install --legacy-peer-deps && npm run build
-    publishPath: frontend/dist
+    staticPublishPath: frontend/dist
     plan: free
     routes:
       - type: rewrite
-        src: /*
-        dest: /index.html
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_URL
         fromService:
