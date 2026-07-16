@@ -18,7 +18,7 @@ services:
       - key: SESSION_SECRET
         generateValue: true
 
-  - type: static
+  - type: web
     name: shore-store-frontend
     env: static
     buildCommand: cd frontend && npm install --legacy-peer-deps && npm run build
