@@ -107,9 +107,64 @@ const toggleAvailability = async (req, res) => {
     }
 };
 
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const getPublicIdFromUrl = (url) => {
+    const parts = url.split('/');
+    const folderIndex = parts.indexOf('shoe_smart_catalog');
+    if (folderIndex !== -1 && folderIndex < parts.length - 1) {
+        const pathWithExtension = parts.slice(folderIndex).join('/');
+        const dotIndex = pathWithExtension.lastIndexOf('.');
+        return dotIndex !== -1 ? pathWithExtension.substring(0, dotIndex) : pathWithExtension;
+    }
+    const filenameWithExtension = parts[parts.length - 1];
+    const dotIndex = filenameWithExtension.lastIndexOf('.');
+    return dotIndex !== -1 ? filenameWithExtension.substring(0, dotIndex) : filenameWithExtension;
+};
+
+// @desc    Delete a shoe listing and its Cloudinary images
+// @route   DELETE /api/products/:id
+// @access  Private (Admin only)
+const deleteProduct = async (req, res) => {
+    try {
+        const product = await Product.findById(req.params.id);
+
+        if (!product) {
+            return res.status(404).json({ message: 'Shoe not found' });
+        }
+
+        // Delete images from Cloudinary
+        if (product.imageUrls && product.imageUrls.length > 0) {
+            for (const url of product.imageUrls) {
+                const publicId = getPublicIdFromUrl(url);
+                try {
+                    await cloudinary.uploader.destroy(publicId);
+                    console.log(`Successfully deleted image from Cloudinary: ${publicId}`);
+                } catch (cloudinaryError) {
+                    console.error(`Failed to delete Cloudinary image: ${publicId}`, cloudinaryError.message);
+                }
+            }
+        }
+
+        // Delete from database
+        await Product.findByIdAndDelete(req.params.id);
+
+        res.status(200).json({ message: 'Shoe listing and associated images deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
 module.exports = {
     getProducts,
     getProductById,
     createProduct,
-    toggleAvailability
+    toggleAvailability,
+    deleteProduct
 };

@@ -1,0 +1,533 @@
+openapi: 3.0.3
+info:
+  title: Shoe Smart Catalog API (Shore Store)
+  description: API for managing the Shore Store catalog, orders, and customer accounts.
+  version: 1.0.0
+servers:
+  - url: http://localhost:2121
+    description: Development server
+paths:
+  /:
+    get:
+      summary: Health check
+      description: Check if the backend server is running.
+      responses:
+        '200':
+          description: Server is running successfully.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Shoe Smart Catalog API is running smoothly...
+
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      description: Create a new customer or admin account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '201':
+          description: User registered successfully and logged in.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Missing name, email, or password.
+        '409':
+          description: Email already exists.
+        '500':
+          description: Server error.
+
+  /api/auth/login:
+    post:
+      summary: Log in a user
+      description: Authenticate credentials and initiate a session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@shorestore.com
+                password:
+                  type: string
+                  format: password
+                  example: admin12345
+      responses:
+        '200':
+          description: Logged in successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid email or password.
+        '500':
+          description: Server error.
+
+  /api/auth/me:
+    get:
+      summary: Get current authenticated user
+      description: Returns information about the currently logged-in user session.
+      responses:
+        '200':
+          description: User data retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated.
+        '500':
+          description: Server error.
+
+  /api/auth/logout:
+    post:
+      summary: Log out current user
+      description: Destroys the current authenticated session.
+      responses:
+        '200':
+          description: Logged out successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+        '500':
+          description: Server error.
+
+  /api/products:
+    get:
+      summary: Retrieve products
+      description: Get all active products, with optional filtering.
+      parameters:
+        - name: category
+          in: query
+          description: Filter shoes by category
+          required: false
+          schema:
+            type: string
+            enum: [Sneakers, Formal, Boots, Ladies Wear, Sandals]
+        - name: size
+          in: query
+          description: Filter shoes by available size
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '500':
+          description: Server error.
+
+    post:
+      summary: Create a product
+      description: Create a new shoe listing. Accepts multipart/form-data.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - category
+                - sizes
+                - images
+              properties:
+                name:
+                  type: string
+                  example: Retro Runner
+                price:
+                  type: number
+                  example: 35000
+                category:
+                  type: string
+                  enum: [Sneakers, Formal, Boots, Ladies Wear, Sandals]
+                  example: Sneakers
+                sizes:
+                  type: string
+                  description: Comma-separated sizes list
+                  example: "40,41,42"
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Up to 4 shoe image files
+      responses:
+        '201':
+          description: Product created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Missing fields or images.
+        '500':
+          description: Server error.
+
+  /api/products/{id}:
+    get:
+      summary: Retrieve a single product
+      description: Get detailed information of a shoe.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The product ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product details retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Shoe not found.
+        '500':
+          description: Server error.
+    delete:
+      summary: Delete a product (Admin only)
+      description: Permanently delete a shoe listing from the database and its images from Cloudinary.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The product ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product and associated images deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Shoe listing and associated images deleted successfully
+        '403':
+          description: Forbidden - Admin access required.
+        '404':
+          description: Shoe not found.
+        '500':
+          description: Server error.
+
+  /api/products/{id}/toggle:
+    patch:
+      summary: Toggle product availability
+      description: Toggle between "Available" and "Sold Out". Admin only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The product ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Availability updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product availability updated to false
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          description: Shoe not found.
+        '500':
+          description: Server error.
+
+  /api/orders:
+    get:
+      summary: Get all orders (Admin only)
+      description: Retrieves all customer orders placed. Requires admin privileges.
+      responses:
+        '200':
+          description: List of all orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '403':
+          description: Forbidden - Admin access required.
+        '500':
+          description: Server error.
+
+    post:
+      summary: Create an order
+      description: Place a new order with items in the cart. Requires session authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - productName
+                      - quantity
+                      - price
+                    properties:
+                      productId:
+                        type: string
+                        nullable: true
+                        example: 60d21b4667d0d8992e610c85
+                      productName:
+                        type: string
+                        example: Retro Runner
+                      color:
+                        type: string
+                        example: Red/White
+                      quantity:
+                        type: integer
+                        minimum: 1
+                        example: 1
+                      sizes:
+                        type: array
+                        items:
+                          type: integer
+                        example: [42]
+                      price:
+                        type: number
+                        example: 35000
+                      imageUrl:
+                        type: string
+                        example: http://res.cloudinary.com/...
+                notes:
+                  type: string
+                  example: Leave at front door.
+      responses:
+        '201':
+          description: Order created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Missing or empty items.
+        '401':
+          description: Unauthorized.
+        '500':
+          description: Server error.
+
+  /api/orders/mine:
+    get:
+      summary: Get customer's orders
+      description: Retrieve orders placed by the currently logged-in customer.
+      responses:
+        '200':
+          description: List of user's orders.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized.
+        '500':
+          description: Server error.
+
+  /api/orders/{id}/status:
+    patch:
+      summary: Update order status (Admin only)
+      description: Change the status of an order (pending, confirmed, cancelled).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, confirmed, cancelled]
+                  example: confirmed
+      responses:
+        '200':
+          description: Order status updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '403':
+          description: Forbidden.
+        '404':
+          description: Order not found.
+        '500':
+          description: Server error.
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 60d21b4667d0d8992e610c85
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        role:
+          type: string
+          enum: [user, admin]
+          example: user
+
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 60d21b4667d0d8992e610c85
+        name:
+          type: string
+          example: Retro Runner
+        price:
+          type: number
+          example: 35000
+        category:
+          type: string
+          enum: [Sneakers, Formal, Boots, Ladies Wear, Sandals]
+          example: Sneakers
+        sizes:
+          type: array
+          items:
+            type: integer
+          example: [40, 41, 42]
+        imageUrls:
+          type: array
+          items:
+            type: string
+          example: ["http://res.cloudinary.com/..."]
+        isAvailable:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 60d21b4667d0d8992e610c85
+        user:
+          type: string
+          description: User ID of the customer who ordered
+          example: 60d21b4667d0d8992e610c85
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                nullable: true
+              productName:
+                type: string
+              color:
+                type: string
+              quantity:
+                type: integer
+              sizes:
+                type: array
+                items:
+                  type: integer
+              price:
+                type: number
+              imageUrl:
+                type: string
+        totalAmount:
+          type: number
+          example: 35000
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled]
+          example: pending
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

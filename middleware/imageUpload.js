@@ -1,10 +1,10 @@
 // backend/middleware/imageUpload.js
-const cloudinary = require('cloudinary').v2;
+const cloudinary = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
 // Configure Cloudinary with our private keys
-cloudinary.config({
+cloudinary.v2.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET
@@ -12,7 +12,7 @@ cloudinary.config({
 
 // Set up storage rules
 const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
+    cloudinary,
     params: {
         folder: 'shoe_smart_catalog', // Name of the folder inside Cloudinary
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'], // Safe image formats
