@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shore_store_backend
+    ports:
+      - "2121:2121"
+    env_file:
+      - config/.env
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shore_store_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
