@@ -4,7 +4,7 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config/.env' });
 
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo').default;
 const bcrypt = require('bcryptjs');
 const connectDB = require('./config/database');
 const passport = require('./config/passport');
