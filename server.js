@@ -34,6 +34,9 @@ app.use(express.urlencoded({ extended: true }));
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Trust the Render reverse proxy so secure cookies can be set
+app.set('trust proxy', 1);
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'shore-store-secret',
   resave: false,
