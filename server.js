@@ -38,11 +38,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'shore-store-secret',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
+  store: process.env.MONGO_URI ? MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
     ttl: 7 * 24 * 60 * 60, // 7 days in seconds
     autoRemove: 'native'
-  }),
+  }) : undefined,
   cookie: {
     httpOnly: true,
     secure: isProduction,
