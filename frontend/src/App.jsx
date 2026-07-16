@@ -85,7 +85,13 @@ function Storefront({ user, onAuthRequired, onOrderCreated }) {
     setError('');
     getProducts(category ? { category } : {})
       .then((data) => {
-        if (active) setProducts(data);
+        if (active) {
+          if (Array.isArray(data)) {
+            setProducts(data);
+          } else {
+            setError('Could not load shoes. Invalid server response format.');
+          }
+        }
       })
       .catch(() => {
         if (active) setError('Could not load shoes. Is the backend running?');

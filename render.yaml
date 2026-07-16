@@ -8,8 +8,12 @@ services:
     envVars:
       - key: PORT
         value: 2121
+      - key: NODE_ENV
+        value: production
       - key: NPM_CONFIG_LEGACY_PEER_DEPS
         value: "true"
+      - key: FRONTEND_URL
+        sync: false
       - key: MONGO_URI
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
@@ -35,4 +39,3 @@ services:
         fromService:
           type: web
           name: shore-store-backend
-          property: host
