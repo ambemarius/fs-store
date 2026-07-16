@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 dotenv.config({ path: './config/.env' });
 
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const bcrypt = require('bcryptjs');
 const connectDB = require('./config/database');
 const passport = require('./config/passport');
@@ -37,11 +38,16 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'shore-store-secret',
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    ttl: 7 * 24 * 60 * 60, // 7 days in seconds
+    autoRemove: 'native'
+  }),
   cookie: {
     httpOnly: true,
-    secure: isProduction,      // HTTPS only in production
-    sameSite: isProduction ? 'none' : 'lax', // cross-origin in production
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in ms
   }
 }));
 app.use(passport.initialize());
